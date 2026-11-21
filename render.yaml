@@ -1,0 +1,29 @@
+databases:
+  - name: gvmc-db
+    plan: free
+    region: singapore
+
+services:
+  - type: web
+    name: gvmc-smart-governance
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: >-
+      npm ci &&
+      node scripts/render-schema.mjs &&
+      npx prisma generate --schema prisma/schema.postgres.prisma &&
+      npx prisma db push --schema prisma/schema.postgres.prisma --skip-generate &&
+      npx tsx prisma/seed.ts &&
+      npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gvmc-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_MAP_PROVIDER
+        value: leaflet

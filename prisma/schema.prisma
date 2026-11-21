@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite: use String instead of Prisma enums
+// UserRole: CITIZEN | OFFICER | WORKER | ADMIN
+// ComplaintStatus: registered | assigned | dispatched | in_progress | resolved
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  phone        String?
+  name         String
+  passwordHash String
+  role         String         @default("CITIZEN")
+  wardId       String?
+  ward         Ward?          @relation(fields: [wardId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  complaints   Complaint[]
+  notifications Notification[]
+}
+
+model Ward {
+  id            String      @id
+  nameEn        String
+  nameTe        String
+  zone          String
+  boundaryGeo   String
+  centerLat     Float
+  centerLng     Float
+  cleanliness   Int         @default(70)
+  users         User[]
+  complaints    Complaint[]
+}
+
+model Complaint {
+  id          String            @id @default(cuid())
+  publicId    String            @unique
+  category    String
+  description String?
+  status      String            @default("registered")
+  lat         Float?
+  lng         Float?
+  address     String?
+  wardId      String?
+  ward        Ward?             @relation(fields: [wardId], references: [id])
+  userId      String?
+  user        User?             @relation(fields: [userId], references: [id])
+  mediaUrls   String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  events      ComplaintEvent[]
+}
+
+model ComplaintEvent {
+  id          String    @id @default(cuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  status      String
+  noteEn      String?
+  noteTe      String?
+  createdAt   DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  titleEn   String
+  titleTe   String
+  bodyEn    String
+  bodyTe    String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model MunicipalOffice {
+  id       String  @id @default(cuid())
+  nameEn   String
+  nameTe   String
+  type     String
+  lat      Float
+  lng      Float
+  address  String
+  wardId   String?
+}
+
+model CityAlert {
+  id        String   @id @default(cuid())
+  type      String
+  messageEn String
+  messageTe String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
